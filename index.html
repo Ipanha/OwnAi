@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheckinAI Assistant</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f8fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            height: 100px;
+            padding: 12px;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            resize: vertical;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background: #357abd;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .answer-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f7f8fa;
+            border-radius: 8px;
+            text-align: left;
+            min-height: 50px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            /* This preserves line breaks from the AI */
+        }
+
+        .answer-box.error {
+            background-color: #fff0f0;
+            color: #d8000c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>🤖 CheckinAI Assistant</h1>
+        <p>Your AI-powered expert for all questions about CheckinMe.</p>
+        <textarea id="question" placeholder="e.g., How much does the Pro Plan cost?"></textarea>
+        <button id="ask-button" onclick="askQuestion()">Ask CheckinAI</button>
+        <div id="answer" class="answer-box">Your answer will appear here...</div>
+    </div>
+
+    <script>
+        const questionInput = document.getElementById("question");
+        const answerDiv = document.getElementById("answer");
+        const askButton = document.getElementById("ask-button");
+
+        async function askQuestion() {
+            const question = questionInput.value;
+            if (!question.trim()) {
+                answerDiv.textContent = "Please enter a question before asking.";
+                answerDiv.classList.add("error");
+                return;
+            }
+
+            // Disable button and show thinking message
+            askButton.disabled = true;
+            askButton.textContent = "Thinking...";
+            answerDiv.textContent = "Please wait while I find the answer...";
+            answerDiv.classList.remove("error");
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/ask", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // This handles errors from the server, like 429 or 500
+                    throw new Error(data.detail || `Server responded with status: ${response.status}`);
+                }
+
+                answerDiv.textContent = data.answer;
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                answerDiv.textContent = "Sorry, an error occurred: " + error.message;
+                answerDiv.classList.add("error");
+            } finally {
+                // Re-enable the button after getting a response or an error
+                askButton.disabled = false;
+                askButton.textContent = "Ask CheckinAI";
+            }
+        }
+    </script>
+
+</body>
+
+</html>
